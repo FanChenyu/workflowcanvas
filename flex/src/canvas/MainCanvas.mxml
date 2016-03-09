@@ -1,0 +1,270 @@
+<?xml version="1.0"?>
+<!--
+  Created by liurui on 15/8/14.
+-->
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+                   borderVisible="false"
+                   creationComplete="creationCompleteHandler(event)"
+                   dragEnter="dragEnterHandler(event)"
+                   dragOver="dragOverHandler(event)"
+                   dragDrop="dragDropHandler(event)">
+    <fx:Script><![CDATA[
+        import components.ArrowLeft;
+        import components.ArrowRight;
+        import components.Line;
+        import components.Node;
+
+        import mx.collections.ArrayCollection;
+        import mx.core.DragSource;
+        import mx.core.IUIComponent;
+        import mx.events.DragEvent;
+        import mx.events.FlexEvent;
+        import mx.managers.DragManager;
+
+        import spark.primitives.Graphic;
+
+        private var nodeList:ArrayCollection = new ArrayCollection();
+        private var dragLine:Line;
+
+        public function drawStart() {
+            addNode("start", {label: '起点'})
+        }
+
+        public function addNode(key, obj, isRedraw:Boolean = true) {
+            obj.width = Node.SIDE_LENGTH;
+            obj.height = Node.SIDE_LENGTH;
+
+            ExternalInterface.call("setNode", key, obj);
+
+            if (isRedraw) {
+                draw();
+            }
+        }
+
+        public function addEdge(a:String, b:String) {
+            ExternalInterface.call("setEdge", a, b, {label: 'hh'});
+            draw();
+        }
+
+        public function draw():void {
+
+            ExternalInterface.call("layoutNode");
+            var nodes:Array = ExternalInterface.call("getNodes");
+            var edges:Array = ExternalInterface.call("getEdges");
+
+            drawNodesAndEdges(nodes, edges);
+        }
+
+        public function setNodes(nodes:Array):void {
+            var _nodes:Array = getDrawNodes();
+            _nodes.forEach(function (_n) {
+
+                var isIn:Boolean = false;
+                nodes.forEach(function (n) {
+                    if (_n.id == n.id) {
+                        isIn = true;
+                        _n.moveTo(n.x, n.y);
+                    }
+                });
+
+                if (!isIn) {
+                    nodeList.removeItem(_n)
+                    removeElement(_n)
+                }
+            });
+
+            nodes.forEach(function (_n) {
+
+                var isIn:Boolean = false;
+                _nodes.forEach(function (n) {
+                    if (_n.id == n.id) {
+                        isIn = true;
+                    }
+                });
+
+                if (!isIn) {
+                    var b:Node = new Node();
+                    b.label = _n.label;
+                    b.id = _n.id;
+                    addElement(b);
+                    nodeList.addItem(b);
+                    b.x = _n.x;
+                    b.y = _n.y;
+                }
+            })
+        }
+
+        private function getDrawNodes():Array {
+            var _nodes:Array = [];
+            for (var i:int = 0; i < numElements; i++) {
+                var n = getElementAt(i);
+                if (n is Node) {
+                    _nodes.push(n)
+                }
+            }
+            return _nodes;
+        }
+
+        public function drawNodesAndEdges(nodes:Array, edges:Array):void {
+
+            setNodes(nodes);
+
+            for (var i:int = numElements - 1; i >= 0; i--) {
+                var n = getElementAt(i);
+                if (n is Node) {
+
+                } else {
+                    removeElement(n)
+                }
+            }
+
+            edges.forEach(function (d) {
+
+                //l.path.data =
+                var p:Array = d.points;
+
+                var i = 0;
+                p.forEach(function (pd) {
+                    if (i < p.length - 1) {
+
+                        var x1 = pd.x + Node.SIDE_LENGTH / 2, x2 = p[i + 1].x + Node.SIDE_LENGTH / 2,
+                                y1 = pd.y + Node.SIDE_LENGTH / 2, y2 = p[i + 1].y + Node.SIDE_LENGTH / 2;
+
+                        var l:Line = new Line();
+                        l.xFrom = x1;
+                        l.yFrom = y1;
+
+                        l.xTo = x2;
+                        l.yTo = y2;
+
+                        addElement(l);
+
+                        if (i == p.length - 2) {
+
+                            var a:Graphic;
+                            if (x2 > x1) {
+                                a = new ArrowRight();
+                                a.x = x2;
+                                a.y = y2;
+                                a.rotation = Math.atan((y2 - y1) / (x2 - x1)) / Math.PI * 180;
+
+                            } else {
+                                a = new ArrowLeft();
+                                a.x = x2;
+                                a.y = y2;
+                                a.rotation = Math.atan((y2 - y1) / (x2 - x1)) / Math.PI * 180;
+                            }
+                            addElement(a)
+
+                        }
+                    }
+
+
+                    i++;
+                })
+
+            })
+        }
+
+        /**
+         * 拖拽进入，接收拖拽
+         * @param e
+         */
+        private function dragEnterHandler(e:DragEvent):void {
+
+            var drag:DragSource = e.dragSource;
+            if (drag.hasFormat('isOut') || drag.hasFormat('isIn')) {
+                DragManager.acceptDragDrop(IUIComponent(e.target));
+            }
+        }
+
+
+        /**
+         * 拖拽在界面上移动，判断拖拽命中节点
+         * @param event
+         */
+        private function dragOverHandler(event:DragEvent):void {
+            if (event.dragSource.hasFormat("isIn")) {
+                var from:Node = event.dragSource.dataForFormat('isIn') as Node;
+
+                //var dragLine:Line = new Line();
+                dragLine.visible = true;
+
+                dragLine.xFrom = from.x + from.width / 2;
+                dragLine.yFrom = from.y + from.height / 2;
+
+
+                dragLine.xTo = event.localX;
+                dragLine.yTo = event.localY;
+
+
+                trace(dragLine.xFrom + " ," + dragLine.yFrom + " to " + dragLine.xTo + "," + dragLine.yTo)
+                addElement(dragLine);
+                var hitNode:Node;
+
+                for each(var node:Node in nodeList) {
+                    if (Tool.isOverHit(node)) {
+                        hitNode = node;
+                        break;
+                    }
+                }
+
+                if (hitNode != from) {
+                    DragManager.showFeedback(DragManager.LINK);
+                } else {
+                    DragManager.showFeedback(DragManager.NONE);
+                }
+
+
+            }
+
+        }
+
+
+        /**
+         * 拖拽结束，放置
+         * @param event
+         */
+        private function dragDropHandler(event:DragEvent):void {
+            if (event.dragSource.hasFormat("isOut")) {
+                var hitNode:Node;
+
+                for each(var node:Node in nodeList) {
+                    if (Tool.isOverHit(node)) {
+                        hitNode = node;
+                        break;
+                    }
+                }
+
+                if (hitNode) {
+                    var id = Tool.createUID();
+                    addNode(id, {label: id.substr(0, 5)}, false)
+                    addEdge(hitNode.id, id)
+                }
+            } else if (event.dragSource.hasFormat("isIn")) {
+                dragLine.visible = false;
+
+                var hitNode:Node;
+
+                for each(var node:Node in nodeList) {
+                    if (Tool.isOverHit(node)) {
+                        hitNode = node;
+                        break;
+                    }
+                }
+
+                if (hitNode) {
+                    var from:Node = event.dragSource.dataForFormat('isIn') as Node;
+                    var to:Node = hitNode;
+
+                    addEdge(from.id, to.id);
+                }
+            }
+        }
+
+        private function creationCompleteHandler(event:FlexEvent):void {
+            dragLine = new Line();
+            addElement(dragLine);
+        }
+        ]]></fx:Script>
+</s:BorderContainer>

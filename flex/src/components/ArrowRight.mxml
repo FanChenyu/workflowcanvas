@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!--
+  Created by liurui on 15/8/14.
+-->
+<s:Graphic xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+        >
+    <!-- Use Use compact syntax with absolute coordinates. -->
+    <s:Path data="M 0 0 L -8 4 L -8 -4 L 0 0">
+        <!-- Define the fill for the arrow. -->
+        <s:fill>
+            <s:SolidColor color="#7c7c7c"/>
+        </s:fill>
+    </s:Path>
+</s:Graphic>

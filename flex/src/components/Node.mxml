@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!--
+  Created by liurui on 15/8/14.
+-->
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+         creationComplete="creationCompleteHandler(event)" width="{SIDE_LENGTH}" height="{SIDE_LENGTH}"
+         mouseDown="mouseDownHandler(event)">
+    <fx:Declarations>
+        <s:Move id="moveEffect" duration="170" target="{this}"/>
+    </fx:Declarations>
+    <s:Rect width="100%" height="100%" radiusX="5" radiusY="5">
+        <s:fill>
+            <s:SolidColor id="mainColor" color="{isProxy?new uint(0xFEFFCD):new uint(0x00AC4E)}"/>
+        </s:fill>
+    </s:Rect>
+    <s:Label text="{label}" verticalCenter="0" horizontalCenter="0"
+             color="{isProxy?new uint(0x777777):new uint(0xFFFFFF)}"/>
+
+    <fx:Script><![CDATA[
+        import canvas.NullDragProxy;
+
+        import mx.core.DragSource;
+        import mx.core.IUIComponent;
+        import mx.events.FlexEvent;
+        import mx.managers.DragManager;
+
+        public static const SIDE_LENGTH:int = 65;
+        public static const xOverFlow:Number = 80;
+        public static const yOverFlow:Number = 15;
+
+
+        [Bindable]
+        public var label:String = "";
+        [Bindable]
+        protected var isProxy:Boolean = false;
+
+        private function creationCompleteHandler(event:FlexEvent):void {
+
+        }
+
+        private function mouseDownHandler(e:MouseEvent):void {
+            var iu:IUIComponent = e.currentTarget as IUIComponent;
+            var ds:DragSource = new DragSource();
+            ds.addData(iu, 'isIn');
+
+            DragManager.doDrag(iu, ds, e, new NullDragProxy());
+        }
+
+        public function moveTo(x, y):void {
+            moveEffect.xTo = x;
+            moveEffect.yTo = y;
+            moveEffect.stop();
+            moveEffect.play();
+        }
+        ]]></fx:Script>
+</s:Group>

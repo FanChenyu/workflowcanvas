@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+               xmlns:canvas="canvas.*" creationComplete="creationCompleteHandler(event)">
+    <fx:Script><![CDATA[
+        import components.NodeDragProxy;
+
+        import mx.core.DragSource;
+        import mx.core.IUIComponent;
+        import mx.events.FlexEvent;
+        import mx.managers.DragManager;
+
+        private function draw():void {
+            ExternalInterface.call("initNodeAndEdge");
+            mainCanvas.draw();
+        }
+
+        private function creationCompleteHandler(event:FlexEvent):void {
+            mainCanvas.drawStart()
+        }
+
+        private function button1_mouseDownHandler(e:MouseEvent):void {
+            var iu:IUIComponent = e.currentTarget as IUIComponent;
+            var ds:DragSource = new DragSource();
+            ds.addData(iu, 'isOut');
+
+            var proxy:NodeDragProxy = new NodeDragProxy();
+            proxy.label = e.currentTarget['label'];
+
+            DragManager.doDrag(iu, ds, e, proxy, 25, 25);
+        }
+        ]]></fx:Script>
+    <s:HGroup width="100%" height="100%">
+        <s:VGroup width="120" paddingLeft="15" paddingTop="10">
+            <s:Button label="来一发" mouseDown="button1_mouseDownHandler(event)"/>
+            <s:Button id="drawNodeButton" label="绘制节点" click="draw()"/>
+        </s:VGroup>
+        <canvas:MainCanvas id="mainCanvas" width="100%" height="100%"/>
+
+
+    </s:HGroup>
+</s:Application>
